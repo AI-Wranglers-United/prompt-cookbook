@@ -1,0 +1,34 @@
+name: 🪄 Sync Wiki Pages from Prompts
+
+on:
+  push:
+    paths:
+      - 'prompts/**'
+      - 'tools/wiki-generator.py'
+    branches:
+      - main
+
+jobs:
+  generate-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Run Wiki Generator
+        run: |
+          python tools/wiki-generator.py
+
+      - name: Commit Generated Pages
+        run: |
+          git config user.name "AI Wrangler Bot"
+          git config user.email "actions@github.com"
+          git add wiki_generated/
+          git commit -m "🔄 Auto-generated wiki pages from prompts"
+          git push
+        continue-on-error: true
