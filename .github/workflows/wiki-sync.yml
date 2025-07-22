@@ -11,6 +11,7 @@ on:
 jobs:
   generate-wiki:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -25,10 +26,16 @@ jobs:
           python tools/wiki-generator.py
 
       - name: Commit Generated Pages
+        env:
+          TOKEN: ${{ secrets.GH_PAT }}
         run: |
           git config user.name "AI Wrangler Bot"
           git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
           git add wiki_generated/
-          git commit -m "🔄 Auto-generated wiki pages from prompts"
-          git push
-        continue-on-error: true
+
+          # Only commit if there are actual changes
+          git diff --cached --quiet || (
+            git commit -m "🔄 Auto-generated wiki pages from prompts"
+            git push
+          )
