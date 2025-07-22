@@ -1,0 +1,72 @@
+name: 🧪 Debug Wiki Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'prompts/**'
+      - 'tools/wiki-generator.py'
+
+jobs:
+  generate-wiki:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Run Wiki Generator
+        run: |
+          echo "🔮 Starting Wiki Generation"
+          python3 tools/wiki-generator.py
+          echo "📁 Listing wiki_generated contents:"
+          ls -la wiki_generated/
+
+      - name: Diagnostic Info Dump
+        run: |
+          echo "👤 Git Identity:"
+          git config user.name || echo "No name set"
+          git config user.email || echo "No email set"
+
+          echo "📍 Current Directory:"
+          pwd
+
+          echo "📦 Repo Contents:"
+          ls -la
+
+          echo "🔀 Branch Info:"
+          git branch --show-current || echo "Branch unknown"
+
+          echo "🏷️ Repo Variable:"
+          echo "${{ github.repository }}"
+
+          echo "🧾 Staged Changes:"
+          git status
+          git diff --cached
+
+      - name: Commit Generated Pages
+        env:
+          TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "🔐 Configuring Git with Token"
+          git config user.name "AI Wrangler Bot"
+          git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
+
+          echo "➕ Staging wiki_generated/"
+          git add wiki_generated/
+
+          echo "🧾 Rechecking staged content..."
+          git diff --cached || echo "No diff detected"
+
+          echo "📤 Attempting Commit and Push"
+          git diff --cached --quiet || (
+            git commit -m "🔄 Auto-generated wiki pages from prompts"
+            git push
+          )
